@@ -3,15 +3,28 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 
 const nav = [
-  { href: '/dashboard', label: 'Dashboard', icon: '📊' },
-  { href: '/dashboard/tickers', label: 'Tickers', icon: '📋' },
-  { href: '/dashboard/patterns', label: 'Scanner Results', icon: '🔍' },
-  { href: '/dashboard/charts', label: 'Charts', icon: '📈' },
-  { href: '/dashboard/intraday', label: 'Intraday Signals', icon: '⚡' },
-  { href: '/dashboard/options-flow', label: 'Options Flow', icon: '💰' },
-  { href: '/dashboard/catalysts', label: 'Catalysts', icon: '📅' },
-  { href: '/dashboard/market-calendar', label: 'Market Calendar', icon: '🗓️' },
-  { href: '/dashboard/config', label: 'Config', icon: '⚙️' },
+  { group: 'Overview', items: [
+    { href: '/dashboard', label: 'Dashboard', icon: '📊' },
+    { href: '/dashboard/market-pulse', label: 'Market Pulse', icon: '📡' },
+    { href: '/dashboard/market-calendar', label: 'Market Calendar', icon: '🗓️' },
+  ]},
+  { group: 'Day Trading', items: [
+    { href: '/dashboard/zero-dte', label: '0DTE Scanner', icon: '⚡' },
+    { href: '/dashboard/options-chain', label: 'Options Chain', icon: '📊' },
+    { href: '/dashboard/trade-planner', label: 'Trade Planner', icon: '🎯' },
+    { href: '/dashboard/journal', label: 'Trade Journal', icon: '📓' },
+  ]},
+  { group: 'Swing Trading', items: [
+    { href: '/dashboard/tickers', label: 'Tickers', icon: '📋' },
+    { href: '/dashboard/patterns', label: 'Scanner Results', icon: '🔍' },
+    { href: '/dashboard/charts', label: 'Charts', icon: '📈' },
+    { href: '/dashboard/intraday', label: 'Intraday Signals', icon: '🔥' },
+    { href: '/dashboard/options-flow', label: 'Options Flow', icon: '💰' },
+    { href: '/dashboard/catalysts', label: 'Catalysts', icon: '📅' },
+  ]},
+  { group: 'Settings', items: [
+    { href: '/dashboard/config', label: 'Config', icon: '⚙️' },
+  ]},
 ]
 
 export default function Sidebar() {
@@ -35,24 +48,32 @@ export default function Sidebar() {
           </div>
         </div>
       </div>
-      <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-        {nav.map(({ href, label, icon }) => {
-          const active = pathname === href
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                active
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-400 hover:text-white hover:bg-gray-800'
-              }`}
-            >
-              <span className="text-base">{icon}</span>
-              {label}
-            </Link>
-          )
-        })}
+      <nav className="flex-1 p-3 overflow-y-auto">
+        {nav.map(({ group, items }) => (
+          <div key={group} className="mb-4">
+            <div className="text-gray-600 text-xs font-bold uppercase tracking-wider px-3 mb-1">{group}</div>
+            <div className="space-y-0.5">
+              {items.map(({ href, label, icon }) => {
+                const active = pathname === href
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      active
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                    }`}
+                  >
+                    <span className="text-base">{icon}</span>
+                    {label}
+                    {href === '/dashboard/zero-dte' && <span className="ml-auto text-xs bg-yellow-500 text-black font-bold px-1.5 py-0.5 rounded">NEW</span>}
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
       <div className="p-3 border-t border-gray-800">
         <button
