@@ -9,6 +9,7 @@ const nav = [
     { href: '/dashboard/market-calendar', label: 'Market Calendar', icon: '🗓️' },
   ]},
   { group: 'Day Trading', items: [
+    { href: '/dashboard/game-plan', label: "Tomorrow's Game Plan", icon: '🗓' },
     { href: '/dashboard/zero-dte', label: '0DTE Scanner', icon: '⚡' },
     { href: '/dashboard/options-chain', label: 'Options Chain', icon: '📊' },
     { href: '/dashboard/trade-planner', label: 'Trade Planner', icon: '🎯' },
@@ -67,7 +68,7 @@ export default function Sidebar() {
                   >
                     <span className="text-base">{icon}</span>
                     {label}
-                    {href === '/dashboard/zero-dte' && <span className="ml-auto text-xs bg-yellow-500 text-black font-bold px-1.5 py-0.5 rounded">NEW</span>}
+                    {href === '/dashboard/game-plan' && <span className="ml-auto text-xs bg-yellow-500 text-black font-bold px-1.5 py-0.5 rounded">NEW</span>}
                   </Link>
                 )
               })}
