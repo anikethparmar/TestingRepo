@@ -83,6 +83,8 @@ const gradeStyle = {
 export default function ZeroDtePage() {
   const [setups, setSetups] = useState<ZeroDteSetup[]>([])
   const [timeNote, setTimeNote] = useState('')
+  const [marketOpen, setMarketOpen] = useState<boolean | null>(null)
+  const [marketWindow, setMarketWindow] = useState<string>('')
   const [loading, setLoading] = useState(false)
   const [scannedAt, setScannedAt] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -103,6 +105,8 @@ export default function ZeroDtePage() {
       if (data.error) throw new Error(data.error)
       setSetups(data.setups)
       setTimeNote(data.timeOfDayNote)
+      setMarketOpen(data.marketOpen ?? true)
+      setMarketWindow(data.marketWindow ?? '')
       setScannedAt(data.scannedAt)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Scan failed')
@@ -179,13 +183,57 @@ export default function ZeroDtePage() {
         </div>
       )}
 
-      {scannedAt && <div className="text-gray-600 text-xs mb-3">Scanned: {new Date(scannedAt).toLocaleTimeString()} — {filtered.length} setups found</div>}
+      {scannedAt && marketOpen && (
+        <div className="text-gray-600 text-xs mb-3">Scanned: {new Date(scannedAt).toLocaleTimeString()} — {filtered.length} setups found</div>
+      )}
 
-      {setups.length === 0 && !loading && (
-        <div className="text-center py-20 text-gray-600">
+      {/* Market closed state */}
+      {marketOpen === false && !loading && (
+        <div className="rounded-xl border border-gray-700 bg-gray-900 p-6 sm:p-8 text-center">
+          <div className="text-4xl mb-3">🌙</div>
+          <h2 className="text-white font-bold text-lg mb-2">Market is Closed</h2>
+          <p className="text-gray-400 text-sm mb-4 max-w-md mx-auto">
+            The 0DTE scanner needs live market data — volume, intraday momentum, and real-time gaps.
+            It runs during market hours: <span className="text-white font-medium">9:30 AM – 4:00 PM ET, Mon–Fri.</span>
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-lg mx-auto mb-6 text-sm">
+            {[
+              { time: '9:30–10:00 AM', label: 'Avoid — opening chaos', color: 'text-red-400' },
+              { time: '10:00–11:00 AM', label: 'PRIME — best window', color: 'text-green-400' },
+              { time: '11:00 AM–2:00 PM', label: 'Avoid — lunch chop', color: 'text-red-400' },
+              { time: '2:00–3:00 PM', label: 'PRIME — afternoon run', color: 'text-green-400' },
+              { time: '3:00–3:30 PM', label: 'Caution — theta risk', color: 'text-yellow-400' },
+              { time: '3:30–4:00 PM', label: 'Avoid — close all positions', color: 'text-red-400' },
+            ].map(w => (
+              <div key={w.time} className="bg-gray-800 rounded-lg p-2.5">
+                <div className="text-gray-400 text-xs">{w.time}</div>
+                <div className={`text-xs font-medium ${w.color}`}>{w.label}</div>
+              </div>
+            ))}
+          </div>
+          <div className="text-gray-500 text-sm">
+            While you wait:{' '}
+            <a href="/dashboard/game-plan" className="text-blue-400 hover:text-blue-300">Run Tomorrow&apos;s Game Plan →</a>
+            {' '}or{' '}
+            <a href="/dashboard/journal" className="text-blue-400 hover:text-blue-300">review your Trade Journal →</a>
+          </div>
+        </div>
+      )}
+
+      {/* No setups found during market hours */}
+      {marketOpen === true && setups.length === 0 && !loading && (
+        <div className="text-center py-16 text-gray-600">
+          <div className="text-4xl mb-3">🔍</div>
+          <div className="font-medium text-gray-400">No qualifying setups found</div>
+          <div className="text-sm mt-1">Market may be choppy. Signals require volume &gt;1.5x average. Try scanning again in 15 min.</div>
+        </div>
+      )}
+
+      {/* Initial loading state before first scan result */}
+      {marketOpen === null && setups.length === 0 && !loading && (
+        <div className="text-center py-16 text-gray-600">
           <div className="text-4xl mb-3">⚡</div>
-          <div className="font-medium">No setups scanned yet</div>
-          <div className="text-sm mt-1">Set your budget and profit target, then click Scan Now</div>
+          <div className="font-medium">Scanning markets...</div>
         </div>
       )}
 

@@ -41,21 +41,27 @@ export interface ZeroDteSetup {
   grade: 'A' | 'B' | 'C'
 }
 
-function getTimeOfDayNote(): string {
+function getMarketStatus(): { open: boolean; note: string; window: 'prime' | 'ok' | 'avoid' | 'closed' | 'premarket' } {
   const now = new Date()
-  const etOffset = -5 * 60 // ET offset in minutes (approximate)
-  const etMinutes = (now.getUTCHours() * 60 + now.getUTCMinutes()) + etOffset
+  // Approximate ET: UTC-5 (ignores DST — close enough for trading decisions)
+  const etMinutes = (now.getUTCHours() * 60 + now.getUTCMinutes()) - 5 * 60
+  const dow = now.getUTCDay() // 0=Sun, 6=Sat
+  const isWeekend = dow === 0 || dow === 6
+
+  if (isWeekend) return { open: false, window: 'closed', note: 'Market closed (weekend). Use Tomorrow\'s Game Plan to prep for Monday.' }
+
   const marketOpen = 9 * 60 + 30
   const marketClose = 16 * 60
 
-  if (etMinutes < marketOpen) return 'Pre-market: Wait for 9:45am to trade — let price discovery settle'
-  if (etMinutes < marketOpen + 30) return '⚠️ First 30 min: HIGH volatility, wide spreads — wait unless gapping hard'
-  if (etMinutes < marketOpen + 90) return '✅ PRIME TIME (10–11am): Best entries. Trend established, spreads tight'
-  if (etMinutes < marketOpen + 210) return '⚡ Mid-day: Chop zone — only trade breakouts with strong volume'
-  if (etMinutes < marketClose - 60) return '✅ PRIME TIME (2–3pm): Afternoon trend resumes, strong setups'
-  if (etMinutes < marketClose - 30) return '⚠️ 3:30pm: Theta burns fast — only hold if strongly in profit'
-  if (etMinutes < marketClose) return '🚨 Final 30 min: 0DTE theta destruction — exit or expire'
-  return 'Market closed. Review today\'s trades and plan tomorrow.'
+  if (etMinutes < 4 * 60) return { open: false, window: 'closed', note: 'Market closed overnight. Check back at 9:30 AM ET.' }
+  if (etMinutes < marketOpen) return { open: false, window: 'premarket', note: 'Pre-market: Wait for 9:45 AM to trade — let price discovery settle.' }
+  if (etMinutes < marketOpen + 30) return { open: true, window: 'avoid', note: '⚠️ First 30 min: HIGH volatility, wide spreads — wait unless gapping hard.' }
+  if (etMinutes < marketOpen + 90) return { open: true, window: 'prime', note: '✅ PRIME TIME (10–11 AM): Best entries. Trend established, spreads tight.' }
+  if (etMinutes < marketOpen + 270) return { open: true, window: 'avoid', note: '⚡ Mid-day chop zone — only trade breakouts with strong volume.' }
+  if (etMinutes < marketClose - 60) return { open: true, window: 'prime', note: '✅ PRIME TIME (2–3 PM): Afternoon trend resumes. Strong setups here.' }
+  if (etMinutes < marketClose - 30) return { open: true, window: 'ok', note: '⚠️ 3:00 PM: Theta burns fast — only hold if strongly in profit.' }
+  if (etMinutes < marketClose) return { open: true, window: 'avoid', note: '🚨 Final 30 min: 0DTE theta destruction — exit all positions now.' }
+  return { open: false, window: 'closed', note: 'Market closed. Review trades in the Journal, then run Tomorrow\'s Game Plan.' }
 }
 
 export async function GET(request: NextRequest) {
@@ -65,7 +71,18 @@ export async function GET(request: NextRequest) {
 
   const setups: ZeroDteSetup[] = []
   const today = new Date().toISOString().split('T')[0]
-  const timeNote = getTimeOfDayNote()
+  const marketStatus = getMarketStatus()
+
+  // When market is closed, return early with helpful status
+  if (!marketStatus.open) {
+    return Response.json({
+      setups: [],
+      timeOfDayNote: marketStatus.note,
+      marketOpen: false,
+      marketWindow: marketStatus.window,
+      scannedAt: new Date().toISOString(),
+    })
+  }
 
   for (const symbol of ZERO_DTE_UNIVERSE) {
     try {
@@ -181,12 +198,18 @@ export async function GET(request: NextRequest) {
         relativeVolume: parseFloat(volRatio.toFixed(1)),
         momentum1h: parseFloat(momentum1h.toFixed(2)),
         catalysts,
-        timeOfDayNote: timeNote,
+        timeOfDayNote: marketStatus.note,
         grade,
       })
     } catch { /* skip */ }
   }
 
   setups.sort((a, b) => b.signalStrength - a.signalStrength)
-  return Response.json({ setups: setups.slice(0, 15), timeOfDayNote: timeNote, scannedAt: new Date().toISOString() })
+  return Response.json({
+    setups: setups.slice(0, 15),
+    timeOfDayNote: marketStatus.note,
+    marketOpen: true,
+    marketWindow: marketStatus.window,
+    scannedAt: new Date().toISOString(),
+  })
 }
