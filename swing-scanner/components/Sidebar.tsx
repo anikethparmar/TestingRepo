@@ -16,11 +16,6 @@ const nav = [
     { href: '/dashboard/trade-planner', label: 'Trade Planner', icon: '🎯' },
     { href: '/dashboard/journal', label: 'Trade Journal', icon: '📓' },
   ]},
-  { group: 'Swing Trading', items: [
-    { href: '/dashboard/tickers', label: 'Tickers', icon: '📋' },
-    { href: '/dashboard/patterns', label: 'Scanner Results', icon: '🔍' },
-    { href: '/dashboard/charts', label: 'Charts', icon: '📈' },
-  ]},
   { group: 'Settings', items: [
     { href: '/dashboard/config', label: 'Config', icon: '⚙️' },
   ]},
