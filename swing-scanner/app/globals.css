@@ -14,6 +14,32 @@ body {
   box-sizing: border-box;
 }
 
+/* Light mode — inverts the gray scale so all Tailwind gray utilities flip */
+html.light {
+  --color-gray-950: #ffffff;
+  --color-gray-900: #f9fafb;
+  --color-gray-800: #f3f4f6;
+  --color-gray-700: #e5e7eb;
+  --color-gray-600: #d1d5db;
+  --color-gray-500: #9ca3af;
+  --color-gray-400: #4b5563;
+  --color-gray-300: #374151;
+  --color-gray-200: #1f2937;
+  --color-white: #111827;
+  /* Keep yellow readable on white backgrounds */
+  --color-yellow-400: #b45309;
+  --color-yellow-500: #92400e;
+}
+
+html.light body {
+  background: #f9fafb;
+  color: #111827;
+}
+
+html.light ::-webkit-scrollbar-track { background: #f3f4f6; }
+html.light ::-webkit-scrollbar-thumb { background: #d1d5db; }
+html.light ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
