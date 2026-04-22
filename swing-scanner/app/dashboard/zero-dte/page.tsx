@@ -80,6 +80,33 @@ const gradeStyle = {
   C: 'bg-gray-600 text-gray-200 font-medium',
 }
 
+type Sensitivity = 'strict' | 'normal' | 'relaxed'
+
+const SENSITIVITY_PRESETS: Record<Sensitivity, {
+  label: string; color: string; badge: string;
+  minGap: number; minVolRatio: number; minMomentum: number; minSignal: number;
+  desc: string; warning?: string
+}> = {
+  strict: {
+    label: 'Strict', color: 'bg-green-600 text-white', badge: 'bg-green-900/40 text-green-400 border-green-700',
+    minGap: 1.5, minVolRatio: 1.5, minMomentum: 0.5, minSignal: 65,
+    desc: 'Gap >1.5% · Vol >1.5x · Grade A/B only',
+    warning: undefined,
+  },
+  normal: {
+    label: 'Normal', color: 'bg-blue-600 text-white', badge: 'bg-blue-900/40 text-blue-400 border-blue-700',
+    minGap: 0.8, minVolRatio: 1.2, minMomentum: 0.3, minSignal: 50,
+    desc: 'Gap >0.8% · Vol >1.2x · Grade A/B/C',
+    warning: 'Some Grade C setups are lower-probability — confirm with a second signal before trading.',
+  },
+  relaxed: {
+    label: 'Relaxed', color: 'bg-yellow-500 text-black', badge: 'bg-yellow-900/40 text-yellow-400 border-yellow-700',
+    minGap: 0.3, minVolRatio: 0.8, minMomentum: 0.2, minSignal: 40,
+    desc: 'Gap >0.3% · Vol >0.8x · All signals',
+    warning: '⚠️ Relaxed mode shows weak setups. Treat these as a watchlist only — do not trade without additional confirmation.',
+  },
+}
+
 export default function ZeroDtePage() {
   const [setups, setSetups] = useState<ZeroDteSetup[]>([])
   const [timeNote, setTimeNote] = useState('')
@@ -90,6 +117,7 @@ export default function ZeroDtePage() {
   const [error, setError] = useState<string | null>(null)
   const [budget, setBudget] = useState(200)
   const [targetProfit, setTargetProfit] = useState(50)
+  const [sensitivity, setSensitivity] = useState<Sensitivity>('normal')
   const [filterGrade, setFilterGrade] = useState<'all' | 'A' | 'B'>('all')
   const [filterTrend, setFilterTrend] = useState<'all' | 'bullish' | 'bearish'>('all')
 
@@ -99,8 +127,16 @@ export default function ZeroDtePage() {
   const scan = useCallback(async () => {
     setLoading(true)
     setError(null)
+    const preset = SENSITIVITY_PRESETS[sensitivity]
     try {
-      const res = await fetch(`/api/zero-dte?budget=${budget}&targetProfit=${targetProfit}`)
+      const params = new URLSearchParams({
+        budget: String(budget),
+        targetProfit: String(targetProfit),
+        minGap: String(preset.minGap),
+        minVolRatio: String(preset.minVolRatio),
+        minMomentum: String(preset.minMomentum),
+      })
+      const res = await fetch(`/api/zero-dte?${params}`)
       const data = await res.json()
       if (data.error) throw new Error(data.error)
       setSetups(data.setups)
@@ -113,7 +149,7 @@ export default function ZeroDtePage() {
     } finally {
       setLoading(false)
     }
-  }, [budget, targetProfit])
+  }, [budget, targetProfit, sensitivity])
 
   const filtered = setups
     .filter(s => filterGrade === 'all' || s.grade === filterGrade)
@@ -138,7 +174,7 @@ export default function ZeroDtePage() {
       )}
 
       {/* Budget Config */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 mb-4">
+      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 mb-3">
         <div className="grid grid-cols-3 gap-4 items-end">
           <div>
             <div className="text-gray-400 text-xs font-bold uppercase mb-2">Budget per Trade</div>
@@ -159,6 +195,35 @@ export default function ZeroDtePage() {
             {loading ? '⟳ Scanning...' : '⚡ Scan Now'}
           </button>
         </div>
+      </div>
+
+      {/* Scanner Sensitivity */}
+      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 mb-4">
+        <div className="text-gray-400 text-xs font-bold uppercase mb-3">Scanner Sensitivity</div>
+        <div className="grid grid-cols-3 gap-2 mb-3">
+          {(Object.entries(SENSITIVITY_PRESETS) as [Sensitivity, typeof SENSITIVITY_PRESETS[Sensitivity]][]).map(([key, preset]) => (
+            <button
+              key={key}
+              onClick={() => setSensitivity(key)}
+              className={`py-2.5 px-3 rounded-xl text-sm font-bold transition-colors border-2 ${
+                sensitivity === key
+                  ? `${preset.color} border-transparent`
+                  : 'bg-gray-800 text-gray-400 border-gray-700 hover:border-gray-500 hover:text-white'
+              }`}
+            >
+              {key === 'strict' ? '🎯' : key === 'normal' ? '⚖️' : '🔓'} {preset.label}
+            </button>
+          ))}
+        </div>
+        <div className={`text-xs px-3 py-2 rounded-lg border ${SENSITIVITY_PRESETS[sensitivity].badge}`}>
+          <span className="font-bold">{SENSITIVITY_PRESETS[sensitivity].label}:</span>{' '}
+          {SENSITIVITY_PRESETS[sensitivity].desc}
+        </div>
+        {SENSITIVITY_PRESETS[sensitivity].warning && (
+          <div className="mt-2 text-xs text-yellow-400 bg-yellow-950/30 border border-yellow-800/40 rounded-lg px-3 py-2">
+            {SENSITIVITY_PRESETS[sensitivity].warning}
+          </div>
+        )}
       </div>
 
       {error && <div className="bg-red-950/30 border border-red-800/40 rounded-xl p-4 mb-4 text-red-300 text-sm">{error}</div>}
@@ -184,7 +249,12 @@ export default function ZeroDtePage() {
       )}
 
       {scannedAt && marketOpen && (
-        <div className="text-gray-600 text-xs mb-3">Scanned: {new Date(scannedAt).toLocaleTimeString()} — {filtered.length} setups found</div>
+        <div className="flex items-center gap-3 mb-3">
+          <div className="text-gray-600 text-xs">Scanned: {new Date(scannedAt).toLocaleTimeString()} — {filtered.length} setups found</div>
+          <span className={`text-xs px-2 py-0.5 rounded-full border font-semibold ${SENSITIVITY_PRESETS[sensitivity].badge}`}>
+            {sensitivity === 'strict' ? '🎯' : sensitivity === 'normal' ? '⚖️' : '🔓'} {SENSITIVITY_PRESETS[sensitivity].label} mode
+          </span>
+        </div>
       )}
 
       {/* Market closed state */}
@@ -222,10 +292,23 @@ export default function ZeroDtePage() {
 
       {/* No setups found during market hours */}
       {marketOpen === true && setups.length === 0 && !loading && (
-        <div className="text-center py-16 text-gray-600">
+        <div className="text-center py-12 text-gray-600">
           <div className="text-4xl mb-3">🔍</div>
           <div className="font-medium text-gray-400">No qualifying setups found</div>
-          <div className="text-sm mt-1">Market may be choppy. Signals require volume &gt;1.5x average. Try scanning again in 15 min.</div>
+          <div className="text-sm mt-1 mb-4">
+            Nothing passed the <span className="font-semibold text-gray-300">{SENSITIVITY_PRESETS[sensitivity].label}</span> filter ({SENSITIVITY_PRESETS[sensitivity].desc}).
+          </div>
+          {sensitivity !== 'relaxed' && (
+            <button
+              onClick={() => setSensitivity(sensitivity === 'strict' ? 'normal' : 'relaxed')}
+              className="text-sm text-blue-400 hover:text-blue-300 underline"
+            >
+              Try {sensitivity === 'strict' ? 'Normal' : 'Relaxed'} mode →
+            </button>
+          )}
+          {sensitivity === 'relaxed' && (
+            <div className="text-sm text-gray-500">Market is quiet — no strong setups today. Come back during Power Hour (10–11 AM ET).</div>
+          )}
         </div>
       )}
 

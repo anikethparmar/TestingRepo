@@ -76,6 +76,10 @@ export async function GET(request: NextRequest) {
   const sp = request.nextUrl.searchParams
   const budget = Number(sp.get('budget') ?? 200)
   const targetProfit = Number(sp.get('targetProfit') ?? 50)
+  // Sensitivity thresholds passed from UI preset
+  const minGap = Number(sp.get('minGap') ?? 0.8)
+  const minVolRatio = Number(sp.get('minVolRatio') ?? 1.2)
+  const minMomentum = Number(sp.get('minMomentum') ?? 0.3)
 
   const setups: ZeroDteSetup[] = []
   const today = new Date().toISOString().split('T')[0]
@@ -118,14 +122,14 @@ export async function GET(request: NextRequest) {
         ? ((closes[closes.length - 1] - closes[closes.length - 5]) / closes[closes.length - 5]) * 100
         : 0
 
-      // Signal detection — thresholds tuned for typical market days
+      // Signal detection — thresholds driven by UI sensitivity preset
       const gapPct = changePct
-      const isGapUp = gapPct > 0.8
-      const isGapDown = gapPct < -0.8
-      const isHighVol = volRatio > 1.2
-      const isMomentumUp = momentum1h > 0.3
-      const isMomentumDown = momentum1h < -0.3
-      const isAnyMove = Math.abs(gapPct) > 0.3
+      const isGapUp = gapPct > minGap
+      const isGapDown = gapPct < -minGap
+      const isHighVol = volRatio > minVolRatio
+      const isMomentumUp = momentum1h > minMomentum
+      const isMomentumDown = momentum1h < -minMomentum
+      const isAnyMove = Math.abs(gapPct) > minGap * 0.4
 
       let trend: 'bullish' | 'bearish' | 'neutral' = 'neutral'
       let signal = ''
