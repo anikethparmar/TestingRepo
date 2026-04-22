@@ -82,29 +82,10 @@ const gradeStyle = {
 
 type Sensitivity = 'strict' | 'normal' | 'relaxed'
 
-const SENSITIVITY_PRESETS: Record<Sensitivity, {
-  label: string; color: string; badge: string;
-  minGap: number; minVolRatio: number; minMomentum: number; minSignal: number;
-  desc: string; warning?: string
-}> = {
-  strict: {
-    label: 'Strict', color: 'bg-green-600 text-white', badge: 'bg-green-900/40 text-green-400 border-green-700',
-    minGap: 1.5, minVolRatio: 1.5, minMomentum: 0.5, minSignal: 65,
-    desc: 'Gap >1.5% · Vol >1.5x · Grade A/B only',
-    warning: undefined,
-  },
-  normal: {
-    label: 'Normal', color: 'bg-blue-600 text-white', badge: 'bg-blue-900/40 text-blue-400 border-blue-700',
-    minGap: 0.8, minVolRatio: 1.2, minMomentum: 0.3, minSignal: 50,
-    desc: 'Gap >0.8% · Vol >1.2x · Grade A/B/C',
-    warning: 'Some Grade C setups are lower-probability — confirm with a second signal before trading.',
-  },
-  relaxed: {
-    label: 'Relaxed', color: 'bg-yellow-500 text-black', badge: 'bg-yellow-900/40 text-yellow-400 border-yellow-700',
-    minGap: 0.3, minVolRatio: 0.8, minMomentum: 0.2, minSignal: 40,
-    desc: 'Gap >0.3% · Vol >0.8x · All signals',
-    warning: '⚠️ Relaxed mode shows weak setups. Treat these as a watchlist only — do not trade without additional confirmation.',
-  },
+function getSensitivityParams(s: Sensitivity) {
+  if (s === 'strict')  return { minGap: 1.5, minVolRatio: 1.5, minMomentum: 0.5 }
+  if (s === 'relaxed') return { minGap: 0.3, minVolRatio: 0.8, minMomentum: 0.2 }
+  return { minGap: 0.8, minVolRatio: 1.2, minMomentum: 0.3 } // normal
 }
 
 export default function ZeroDtePage() {
@@ -127,14 +108,14 @@ export default function ZeroDtePage() {
   const scan = useCallback(async () => {
     setLoading(true)
     setError(null)
-    const preset = SENSITIVITY_PRESETS[sensitivity]
+    const { minGap, minVolRatio, minMomentum } = getSensitivityParams(sensitivity)
     try {
       const params = new URLSearchParams({
         budget: String(budget),
         targetProfit: String(targetProfit),
-        minGap: String(preset.minGap),
-        minVolRatio: String(preset.minVolRatio),
-        minMomentum: String(preset.minMomentum),
+        minGap: String(minGap),
+        minVolRatio: String(minVolRatio),
+        minMomentum: String(minMomentum),
       })
       const res = await fetch(`/api/zero-dte?${params}`)
       const data = await res.json()
@@ -201,30 +182,32 @@ export default function ZeroDtePage() {
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 mb-4">
         <div className="text-gray-400 text-xs font-bold uppercase mb-3">Scanner Sensitivity</div>
         <div className="grid grid-cols-3 gap-2 mb-3">
-          {(['strict', 'normal', 'relaxed'] as Sensitivity[]).map(key => {
-            const preset = SENSITIVITY_PRESETS[key]
-            return (
-              <button
-                key={key}
-                onClick={() => setSensitivity(key)}
-                className={`py-2.5 px-3 rounded-xl text-sm font-bold transition-colors border-2 ${
-                  sensitivity === key
-                    ? `${preset.color} border-transparent`
-                    : 'bg-gray-800 text-gray-400 border-gray-700 hover:border-gray-500 hover:text-white'
-                }`}
-              >
-                {key === 'strict' ? '🎯' : key === 'normal' ? '⚖️' : '🔓'} {preset.label}
-              </button>
-            )
-          })}
+          <button onClick={() => setSensitivity('strict')}
+            className={`py-2.5 px-3 rounded-xl text-sm font-bold transition-colors border-2 ${sensitivity === 'strict' ? 'bg-green-600 text-white border-transparent' : 'bg-gray-800 text-gray-400 border-gray-700 hover:border-gray-500 hover:text-white'}`}>
+            🎯 Strict
+          </button>
+          <button onClick={() => setSensitivity('normal')}
+            className={`py-2.5 px-3 rounded-xl text-sm font-bold transition-colors border-2 ${sensitivity === 'normal' ? 'bg-blue-600 text-white border-transparent' : 'bg-gray-800 text-gray-400 border-gray-700 hover:border-gray-500 hover:text-white'}`}>
+            ⚖️ Normal
+          </button>
+          <button onClick={() => setSensitivity('relaxed')}
+            className={`py-2.5 px-3 rounded-xl text-sm font-bold transition-colors border-2 ${sensitivity === 'relaxed' ? 'bg-yellow-500 text-black border-transparent' : 'bg-gray-800 text-gray-400 border-gray-700 hover:border-gray-500 hover:text-white'}`}>
+            🔓 Relaxed
+          </button>
         </div>
-        <div className={`text-xs px-3 py-2 rounded-lg border ${SENSITIVITY_PRESETS[sensitivity].badge}`}>
-          <span className="font-bold">{SENSITIVITY_PRESETS[sensitivity].label}:</span>{' '}
-          {SENSITIVITY_PRESETS[sensitivity].desc}
+        <div className={`text-xs px-3 py-2 rounded-lg border ${sensitivity === 'strict' ? 'bg-green-950/30 text-green-400 border-green-800' : sensitivity === 'relaxed' ? 'bg-yellow-950/30 text-yellow-400 border-yellow-800' : 'bg-blue-950/30 text-blue-400 border-blue-800'}`}>
+          {sensitivity === 'strict' && <><span className="font-bold">Strict:</span> Gap &gt;1.5% · Vol &gt;1.5x · Grade A/B only</>}
+          {sensitivity === 'normal' && <><span className="font-bold">Normal:</span> Gap &gt;0.8% · Vol &gt;1.2x · Grade A/B/C</>}
+          {sensitivity === 'relaxed' && <><span className="font-bold">Relaxed:</span> Gap &gt;0.3% · Vol &gt;0.8x · All signals</>}
         </div>
-        {SENSITIVITY_PRESETS[sensitivity].warning && (
+        {sensitivity === 'normal' && (
+          <div className="mt-2 text-xs text-blue-300 bg-blue-950/20 border border-blue-900/40 rounded-lg px-3 py-2">
+            Grade C setups are lower-probability — confirm with a second signal before trading.
+          </div>
+        )}
+        {sensitivity === 'relaxed' && (
           <div className="mt-2 text-xs text-yellow-400 bg-yellow-950/30 border border-yellow-800/40 rounded-lg px-3 py-2">
-            {SENSITIVITY_PRESETS[sensitivity].warning}
+            ⚠️ Relaxed mode shows weak setups. Treat as a watchlist only — do not trade without additional confirmation.
           </div>
         )}
       </div>
@@ -254,8 +237,8 @@ export default function ZeroDtePage() {
       {scannedAt && marketOpen && (
         <div className="flex items-center gap-3 mb-3">
           <div className="text-gray-600 text-xs">Scanned: {new Date(scannedAt).toLocaleTimeString()} — {filtered.length} setups found</div>
-          <span className={`text-xs px-2 py-0.5 rounded-full border font-semibold ${SENSITIVITY_PRESETS[sensitivity].badge}`}>
-            {sensitivity === 'strict' ? '🎯' : sensitivity === 'normal' ? '⚖️' : '🔓'} {SENSITIVITY_PRESETS[sensitivity].label} mode
+          <span className={`text-xs px-2 py-0.5 rounded-full border font-semibold ${sensitivity === 'strict' ? 'bg-green-950/30 text-green-400 border-green-800' : sensitivity === 'relaxed' ? 'bg-yellow-950/30 text-yellow-400 border-yellow-800' : 'bg-blue-950/30 text-blue-400 border-blue-800'}`}>
+            {sensitivity === 'strict' ? '🎯 Strict' : sensitivity === 'normal' ? '⚖️ Normal' : '🔓 Relaxed'} mode
           </span>
         </div>
       )}
@@ -298,15 +281,15 @@ export default function ZeroDtePage() {
         <div className="text-center py-12 text-gray-600">
           <div className="text-4xl mb-3">🔍</div>
           <div className="font-medium text-gray-400">No qualifying setups found</div>
-          <div className="text-sm mt-1 mb-4">
-            Nothing passed the <span className="font-semibold text-gray-300">{SENSITIVITY_PRESETS[sensitivity].label}</span> filter ({SENSITIVITY_PRESETS[sensitivity].desc}).
+          <div className="text-sm mt-1 mb-4 text-gray-500">
+            Nothing passed the current filter. Try a lower sensitivity above.
           </div>
           {sensitivity !== 'relaxed' && (
             <button
               onClick={() => setSensitivity(sensitivity === 'strict' ? 'normal' : 'relaxed')}
               className="text-sm text-blue-400 hover:text-blue-300 underline"
             >
-              Try {sensitivity === 'strict' ? 'Normal' : 'Relaxed'} mode →
+              Try {sensitivity === 'strict' ? '⚖️ Normal' : '🔓 Relaxed'} mode →
             </button>
           )}
           {sensitivity === 'relaxed' && (
