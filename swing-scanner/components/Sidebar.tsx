@@ -9,11 +9,14 @@ const nav = [
     { href: '/dashboard/market-pulse', label: 'Market Pulse', icon: '📡' },
   ]},
   { group: 'Day Trading', items: [
-    { href: '/dashboard/game-plan', label: "Tomorrow's Game Plan", icon: '🗓', badge: 'NEW' },
+    { href: '/dashboard/game-plan', label: "Tomorrow's Game Plan", icon: '🗓' },
     { href: '/dashboard/zero-dte', label: '0DTE Scanner', icon: '⚡' },
     { href: '/dashboard/options-chain', label: 'Options Chain', icon: '📊' },
     { href: '/dashboard/trade-planner', label: 'Trade Planner', icon: '🎯' },
     { href: '/dashboard/journal', label: 'Trade Journal', icon: '📓' },
+  ]},
+  { group: 'Learn & Practice', items: [
+    { href: '/dashboard/learn', label: 'Options Academy', icon: '🎓', badge: 'NEW' },
   ]},
   { group: 'Settings', items: [
     { href: '/dashboard/config', label: 'Config', icon: '⚙️' },
@@ -40,10 +43,10 @@ export default function Sidebar({ onClose }: SidebarProps) {
       {/* Header */}
       <div className="p-4 border-b border-gray-800 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center text-lg shrink-0">📡</div>
+          <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center text-lg shrink-0">🌟</div>
           <div>
-            <div className="font-bold text-white text-sm">Swing Scanner</div>
-            <div className="text-gray-500 text-xs">Options & Swing Trading</div>
+            <div className="font-bold text-white text-sm">Dreamer</div>
+            <div className="text-gray-500 text-xs">Options Day Trading</div>
           </div>
         </div>
         {/* Mobile close button */}
@@ -67,7 +70,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
           <div key={group} className="mb-5">
             <div className="text-gray-600 text-xs font-bold uppercase tracking-wider px-3 mb-1">{group}</div>
             <div className="space-y-0.5">
-              {items.map(({ href, label, icon, badge }) => {
+              {items.map(({ href, label, icon, badge }: { href: string; label: string; icon: string; badge?: string }) => {
                 const active = pathname === href
                 return (
                   <Link

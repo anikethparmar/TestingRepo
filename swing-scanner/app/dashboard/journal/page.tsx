@@ -80,17 +80,26 @@ export default function JournalPage() {
   const [editId, setEditId] = useState<string | null>(null)
   const [filterDate, setFilterDate] = useState('')
   const [tab, setTab] = useState<'journal' | 'stats'>('journal')
+  const [dailyTarget, setDailyTarget] = useState(50)
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('swingJournal')
-      if (saved) setTrades(JSON.parse(saved))
-    } catch { /* ignore */ }
+    fetch('/api/store/journal')
+      .then(r => r.json())
+      .then(setTrades)
+      .catch(() => {/* use empty */})
+    fetch('/api/store/config')
+      .then(r => r.json())
+      .then(d => { if (d?.targetProfit) setDailyTarget(d.targetProfit) })
+      .catch(() => {/* use default */})
   }, [])
 
-  function save(updatedTrades: Trade[]) {
+  async function save(updatedTrades: Trade[]) {
     setTrades(updatedTrades)
-    localStorage.setItem('swingJournal', JSON.stringify(updatedTrades))
+    await fetch('/api/store/journal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updatedTrades),
+    })
   }
 
   function calcPnl(entry: number, exit: number, contracts: number, type: 'call' | 'put') {
@@ -100,7 +109,7 @@ export default function JournalPage() {
     return { pnl, pnlPercent }
   }
 
-  function submitTrade() {
+  async function submitTrade() {
     const { pnl, pnlPercent } = calcPnl(form.entryPrice, form.exitPrice, form.contracts, form.optionType)
     const outcome: Trade['outcome'] = form.exitPrice === 0 ? 'open' : pnl >= 0 ? 'win' : 'loss'
 
@@ -116,8 +125,8 @@ export default function JournalPage() {
     setShowForm(false)
   }
 
-  function deleteTrade(id: string) {
-    save(trades.filter(t => t.id !== id))
+  async function deleteTrade(id: string) {
+    await save(trades.filter(t => t.id !== id))
   }
 
   function editTrade(t: Trade) {
@@ -177,9 +186,9 @@ export default function JournalPage() {
           </div>
           <div className="text-right">
             <div className="text-gray-400 text-xs">Daily Target</div>
-            <div className="text-white font-bold">$50.00</div>
+            <div className="text-white font-bold">${dailyTarget.toFixed(2)}</div>
             <div className="mt-1 h-2 w-32 bg-gray-800 rounded-full overflow-hidden">
-              <div className={`h-full rounded-full transition-all ${todayPnl >= 50 ? 'bg-green-500' : todayPnl > 0 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${Math.min(100, Math.max(0, (todayPnl / 50) * 100))}%` }} />
+              <div className={`h-full rounded-full transition-all ${todayPnl >= dailyTarget ? 'bg-green-500' : todayPnl > 0 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${Math.min(100, Math.max(0, (todayPnl / dailyTarget) * 100))}%` }} />
             </div>
           </div>
         </div>

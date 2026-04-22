@@ -20,8 +20,8 @@ export default function DashboardShell({ children }: { children: React.ReactNode
             <line x1="3" y1="18" x2="21" y2="18" />
           </svg>
         </button>
-        <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-sm">📡</div>
-        <span className="font-bold text-white text-sm">Swing Scanner</span>
+        <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-sm">🌟</div>
+        <span className="font-bold text-white text-sm">Dreamer</span>
       </div>
 
       {/* Sidebar overlay on mobile */}

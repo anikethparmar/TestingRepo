@@ -6,8 +6,8 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Swing Scanner — Options & Swing Trading Assistant",
-  description: "Automatically finds stocks with trading opportunities, scans for chart patterns, tracks market-moving events.",
+  title: "Dreamer — Options Day Trading Assistant",
+  description: "Your personal options day trading coach. Scan for 0DTE setups, plan trades, log your journal, and learn the game.",
 };
 
 export default function RootLayout({

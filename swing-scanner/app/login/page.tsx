@@ -31,39 +31,29 @@ function LoginForm() {
 
   return (
     <div className="min-h-screen bg-gray-950 flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-600 mb-4">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-            </svg>
-          </div>
-          <h1 className="text-3xl font-bold text-white">Swing Scanner</h1>
-          <p className="text-gray-400 mt-2">Options & Swing Trading Assistant</p>
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-600 mb-4 text-3xl">🌟</div>
+          <h1 className="text-4xl font-bold text-white">Dreamer</h1>
         </div>
-        <div className="bg-gray-900 rounded-2xl border border-gray-800 p-8">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter access password"
-                autoFocus
-              />
-            </div>
-            {error && <p className="text-red-400 text-sm">{error}</p>}
-            <button
-              type="submit"
-              disabled={loading || !password}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 text-white font-semibold py-3 rounded-lg transition-colors"
-            >
-              {loading ? 'Verifying...' : 'Enter Scanner'}
-            </button>
-          </form>
-        </div>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <input
+            type="password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            className="w-full bg-gray-900 border border-gray-800 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Password"
+            autoFocus
+          />
+          {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+          <button
+            type="submit"
+            disabled={loading || !password}
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-800 disabled:text-gray-600 text-white font-semibold py-3 rounded-xl transition-colors"
+          >
+            {loading ? '...' : 'Enter'}
+          </button>
+        </form>
       </div>
     </div>
   )
