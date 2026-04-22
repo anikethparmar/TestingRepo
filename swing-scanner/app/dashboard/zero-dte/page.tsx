@@ -102,9 +102,6 @@ export default function ZeroDtePage() {
   const [filterGrade, setFilterGrade] = useState<'all' | 'A' | 'B'>('all')
   const [filterTrend, setFilterTrend] = useState<'all' | 'bullish' | 'bearish'>('all')
 
-  // Auto-scan on mount with default budget
-  useEffect(() => { scan() }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
   const scan = useCallback(async () => {
     setLoading(true)
     setError(null)

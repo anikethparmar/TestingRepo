@@ -1,7 +1,4 @@
 import { NextRequest } from 'next/server'
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const YahooFinanceClass = require('yahoo-finance2').default
-const yf = new YahooFinanceClass()
 import { fetchOHLCV } from '@/lib/yahoo'
 
 // Best 0DTE candidates — liquid, high-volume options
@@ -73,6 +70,8 @@ function getMarketStatus(): { open: boolean; note: string; window: 'prime' | 'ok
 }
 
 export async function GET(request: NextRequest) {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const yf = new (require('yahoo-finance2').default)()
   const sp = request.nextUrl.searchParams
   const budget = Number(sp.get('budget') ?? 200)
   const targetProfit = Number(sp.get('targetProfit') ?? 50)
