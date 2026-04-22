@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 const PASSWORD = 'zoomboomzoom!23'
 const COOKIE_NAME = 'swing_auth'
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   if (pathname.startsWith('/api/') || pathname === '/login') {
