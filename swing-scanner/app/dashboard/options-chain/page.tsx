@@ -1,5 +1,54 @@
 'use client'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
+import PageHelp from '@/components/PageHelp'
+
+const HELP = {
+  title: 'Options Chain',
+  sections: [
+    {
+      heading: 'Reading the Chain',
+      tips: [
+        'Calls profit when the stock goes UP. Puts profit when the stock goes DOWN.',
+        'ITM (In The Money): calls with strike below spot, puts with strike above spot. More expensive but higher probability.',
+        'OTM (Out of The Money): cheaper, lower probability of profit, but higher % return if right.',
+        'For day trading, look for delta 0.30–0.55 — balanced risk/reward zone.',
+        'Always use the MIDPOINT price for your limit order, not the ask.',
+      ],
+      link: { label: 'Options chain basics', url: 'https://www.investopedia.com/terms/o/optionchain.asp', source: 'Investopedia' },
+    },
+    {
+      heading: 'The Greeks',
+      tips: [
+        'Delta (Δ): How much the option moves per $1 stock move. Delta 0.40 = option gains $0.40 when stock rises $1.',
+        'Gamma (Γ): Rate of change of delta. High gamma = option accelerates quickly (risky for sellers, great for buyers).',
+        'Theta (Θ): Daily time decay. Theta -0.05 = option loses $5/day (per contract) even if stock doesn\'t move.',
+        'Vega (V): Sensitivity to IV changes. High vega = option value changes a lot when IV spikes/drops.',
+        'For 0DTE trades, theta is your enemy — the option loses value every hour.',
+      ],
+      link: { label: 'Options Greeks explained', url: 'https://www.tastylive.com/learn/options-greeks', source: 'tastylive' },
+    },
+    {
+      heading: 'IV Rank & What It Means',
+      tips: [
+        'IV Rank compares current IV to its 52-week range. 0 = cheapest ever, 100 = most expensive ever.',
+        'IV Rank < 30: Options are cheap → BUY options (debit spreads or naked long options).',
+        'IV Rank > 70: Options are expensive → SELL options (credit spreads, iron condors).',
+        'IV Percentile: % of days in the past year that IV was lower than today.',
+        '30-Day HV: Historical volatility. If IV >> HV, options are overpriced relative to actual moves.',
+      ],
+      link: { label: 'IV Rank & Percentile', url: 'https://www.tastylive.com/learn/iv-rank-iv-percentile', source: 'tastylive' },
+    },
+    {
+      heading: 'Bid/Ask Spread Warning',
+      tips: [
+        'Spread % = (ask - bid) / midpoint. This is the friction cost of the trade.',
+        'Spread > 10%: Avoid — you\'re giving away too much edge at entry.',
+        'Always place limit orders at the midpoint. Never pay the ask.',
+        'SPY and QQQ have the tightest spreads (0.01–0.05). Single stocks can be 5–15%.',
+      ],
+    },
+  ],
+}
 
 interface OptionContract {
   strike: number
@@ -58,6 +107,9 @@ export default function OptionsChainPage() {
   const [budget, setBudget] = useState(200)
   const [showItmOnly, setShowItmOnly] = useState(false)
   const [focusStrike, setFocusStrike] = useState<number | null>(null)
+
+  // Auto-load SPY on mount
+  useEffect(() => { load('SPY', '') }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const load = useCallback(async (sym = symbol, exp = expiry) => {
     setLoading(true)
@@ -139,6 +191,8 @@ export default function OptionsChainPage() {
           ))}
         </div>
       </div>
+
+      <PageHelp {...HELP} />
 
       {error && <div className="bg-red-950/30 border border-red-800/40 rounded-xl p-4 mb-4 text-red-300 text-sm">{error}</div>}
 

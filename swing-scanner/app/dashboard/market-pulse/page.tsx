@@ -1,5 +1,50 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
+import PageHelp from '@/components/PageHelp'
+
+const HELP = {
+  title: 'Options Market Pulse',
+  sections: [
+    {
+      heading: 'VIX — Volatility Index',
+      tips: [
+        'VIX measures how much the S&P 500 is expected to move over the next 30 days.',
+        'VIX < 15: Options are cheap — good time to BUY calls or puts outright.',
+        'VIX 15–25: Normal — use debit spreads to balance cost vs reward.',
+        'VIX > 25: Options are expensive — use credit spreads or sell premium instead.',
+        'VIX spikes on fear; falling VIX = calming market = call buyers win.',
+      ],
+      link: { label: 'Understanding the VIX', url: 'https://www.investopedia.com/terms/v/vix.asp', source: 'Investopedia' },
+    },
+    {
+      heading: 'Fear & Greed Index',
+      tips: [
+        'A composite sentiment score (0=Extreme Fear, 100=Extreme Greed).',
+        'Extreme Greed (>75): Market may be due for a reversal — be cautious with calls.',
+        'Extreme Fear (<25): Often a contrarian buy signal — market may bounce.',
+        'Best trades happen when Fear & Greed aligns with VIX (e.g., high fear + high VIX = oversold).',
+      ],
+      link: { label: 'Fear & Greed explained', url: 'https://www.cnn.com/markets/fear-and-greed', source: 'CNN Markets' },
+    },
+    {
+      heading: 'Put/Call Ratio',
+      tips: [
+        'PCR < 0.7: More calls than puts being bought — bullish sentiment. Contrarian: could signal complacency.',
+        'PCR > 1.1: Heavy put buying — bearish sentiment. Contrarian: often a buy signal (fear peak).',
+        'Use PCR as a confirming indicator, not a standalone signal.',
+      ],
+      link: { label: 'Put/Call ratio guide', url: 'https://www.investopedia.com/terms/p/put-call-ratio.asp', source: 'Investopedia' },
+    },
+    {
+      heading: 'Day Trading Score',
+      tips: [
+        'A 0–100 score based on VIX level, SPY/QQQ directional agreement, and trend clarity.',
+        '85+: Excellent conditions. 65–85: Good. 45–65: Be selective. <45: Sit out.',
+        'Low score days = high whipsaw risk. Wait for 85+ before trading full size.',
+      ],
+    },
+  ],
+}
 
 interface MarketPulseData {
   indices: Record<string, { price: number; changePct: number; volume: number }>
@@ -117,6 +162,8 @@ export default function MarketPulsePage() {
           {loading ? '⟳' : '🔄'} Refresh
         </button>
       </div>
+
+      <PageHelp {...HELP} />
 
       {error && (
         <div className="bg-red-950/30 border border-red-800/40 rounded-xl p-4 mb-4 text-red-300 text-sm">{error}</div>

@@ -1,5 +1,41 @@
 'use client'
 import { useState, useEffect } from 'react'
+import PageHelp from '@/components/PageHelp'
+
+const HELP = {
+  title: 'Trade Journal',
+  sections: [
+    {
+      heading: 'Why journal every trade?',
+      tips: [
+        'Journaling is the #1 habit separating profitable traders from losing ones.',
+        'Without data, you\'re guessing. With data, you know exactly what\'s working.',
+        'Log EVERY trade — wins and losses. Selectively logging only wins is lying to yourself.',
+        'Review your journal weekly: which grade setups are most profitable? Trade only those.',
+      ],
+      link: { label: 'Why trade journaling matters', url: 'https://www.investopedia.com/articles/trading/08/trading-journal.asp', source: 'Investopedia' },
+    },
+    {
+      heading: 'Grading your trades (A / B / C)',
+      tips: [
+        'Grade A: You followed all your rules — right time, right signal, right size. Outcome doesn\'t matter.',
+        'Grade B: You deviated slightly (e.g., entered 5 min early, slightly oversized).',
+        'Grade C: You broke a rule — chased a setup, traded during lunch, held past stop.',
+        'Goal: Only take Grade A setups. A win from a Grade C trade is dangerous (it reinforces bad habits).',
+      ],
+    },
+    {
+      heading: 'Key stats to track',
+      tips: [
+        'Win Rate: % of trades that were profitable. A 50% win rate with 2:1 R/R is profitable.',
+        'Profit Factor: Total wins / Total losses. Above 1.5 = good. Below 1.0 = you\'re losing money.',
+        'Average Win vs Average Loss: Your avg win should be 1.5–2x your avg loss.',
+        'Win Rate by Grade: If Grade A wins 70%+ but Grade C wins 30%, stop taking Grade C trades.',
+      ],
+      link: { label: 'Trading statistics explained', url: 'https://www.tastylive.com/learn/trading-statistics', source: 'tastylive' },
+    },
+  ],
+}
 
 interface Trade {
   id: string
@@ -117,16 +153,18 @@ export default function JournalPage() {
   })
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-4 sm:p-6 max-w-5xl mx-auto">
+      <div className="flex items-center justify-between mb-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">📓 Trade Journal</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-white">📓 Trade Journal</h1>
           <p className="text-gray-400 mt-1 text-sm">Log every trade. Track your P&amp;L, win rate, and patterns. The journal is your edge.</p>
         </div>
         <button onClick={() => { setShowForm(!showForm); setEditId(null); setForm({ ...EMPTY_TRADE }) }} className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-xl text-sm transition-colors">
           {showForm ? '✕ Cancel' : '+ Log Trade'}
         </button>
       </div>
+
+      <PageHelp {...HELP} />
 
       {/* Today's P&L banner */}
       <div className={`rounded-xl border p-4 mb-4 ${todayPnl >= 0 ? 'bg-green-950/20 border-green-700/30' : 'bg-red-950/20 border-red-700/30'}`}>

@@ -7,7 +7,6 @@ const nav = [
   { group: 'Overview', items: [
     { href: '/dashboard', label: 'Dashboard', icon: '📊' },
     { href: '/dashboard/market-pulse', label: 'Market Pulse', icon: '📡' },
-    { href: '/dashboard/market-calendar', label: 'Market Calendar', icon: '🗓️' },
   ]},
   { group: 'Day Trading', items: [
     { href: '/dashboard/game-plan', label: "Tomorrow's Game Plan", icon: '🗓', badge: 'NEW' },

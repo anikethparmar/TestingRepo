@@ -8,7 +8,6 @@ const modules = [
   { href: '/dashboard/options-chain', label: 'Options Chain', icon: '📊', color: 'purple', desc: 'Full chain with real Greeks (delta, gamma, theta, vega), IV rank, and contract sizing.' },
   { href: '/dashboard/trade-planner', label: 'Trade Planner', icon: '🎯', color: 'green', desc: 'Position sizer. Enter budget, target, max loss — get exact contracts, break-even, R/R.' },
   { href: '/dashboard/journal', label: 'Trade Journal', icon: '📓', color: 'teal', desc: 'Log every trade. Track win rate, P&L, profit factor, and daily progress to $50 goal.' },
-  { href: '/dashboard/market-calendar', label: 'Market Calendar', icon: '🗓️', color: 'red', desc: 'FOMC, CPI, NFP, options expiration — each event with its trading angle and impact.' },
   { href: '/dashboard/config', label: 'Config', icon: '⚙️', color: 'gray', desc: 'Set your daily budget, profit target, ticker universe, and trading preferences.' },
 ]
 

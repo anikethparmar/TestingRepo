@@ -1,6 +1,48 @@
 'use client'
 import { useEffect, useState } from 'react'
 import type { GamePlanData, TickerScore } from '@/app/api/game-plan/route'
+import PageHelp from '@/components/PageHelp'
+
+const HELP = {
+  title: "Tomorrow's Game Plan",
+  sections: [
+    {
+      heading: 'How the scanner ranks tickers',
+      tips: [
+        'Scores 30 liquid tickers across: volume ratio (15%), 5-day momentum (25%), today\'s move (20%), chart pattern (25%), IV suitability (15%).',
+        'Grade A+/A tickers have the strongest combined signal across all factors.',
+        'Volume ratio > 2x average = institutional activity. This is a strong signal.',
+        'The top pick (★) is the highest-confidence setup for tomorrow.',
+      ],
+    },
+    {
+      heading: 'Market Bias (Bullish / Bearish / Neutral)',
+      tips: [
+        'Reads the tape across all 30 scanned tickers to determine overall market direction.',
+        'Bullish bias: Favor calls on your top picks.',
+        'Bearish bias: Favor puts or sit out if you\'re a beginner.',
+        'Neutral: Wait for 10 AM to confirm direction before entering.',
+      ],
+    },
+    {
+      heading: 'Entry Windows',
+      tips: [
+        'PRIME windows (green): 10:00–11:00 AM and 2:00–3:00 PM. Highest win rate, tightest spreads.',
+        'AVOID windows (red): 9:30–10:00 AM (opening chaos), 11:30 AM–2:00 PM (lunch chop), 3:30–4:00 PM (theta burn).',
+        'Enter only in PRIME windows. If you miss the window, wait for the next one.',
+      ],
+      link: { label: 'Time of day trading patterns', url: 'https://www.investopedia.com/articles/active-trading/040714/best-time-day-week-month-trade-stocks.asp', source: 'Investopedia' },
+    },
+    {
+      heading: 'Morning Checklist',
+      tips: [
+        'Check every item before your first trade. If you can\'t check all items, don\'t trade today.',
+        'The most important: Is VIX below 25? Is SPY/QQQ trending clearly by 10 AM?',
+        'If you have 3 unchecked items, sit out. Forced trades are losing trades.',
+      ],
+    },
+  ],
+}
 
 const GRADE_COLOR: Record<string, string> = {
   'A+': 'bg-emerald-500 text-white',
@@ -207,7 +249,7 @@ export default function GamePlanPage() {
   const allChecked = checkedItems.size === data.morningChecklist.length
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 space-y-6">
+    <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header */}
       <div>
         <div className="flex items-center gap-3 mb-1">
@@ -221,6 +263,8 @@ export default function GamePlanPage() {
           </div>
         </div>
       </div>
+
+      <PageHelp {...HELP} />
 
       {/* Daily goal bar */}
       <div className="bg-gray-800 rounded-xl border border-gray-700 p-4">

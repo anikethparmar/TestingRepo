@@ -1,5 +1,50 @@
 'use client'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
+import PageHelp from '@/components/PageHelp'
+
+const HELP = {
+  title: '0DTE Scanner',
+  sections: [
+    {
+      heading: 'What is 0DTE?',
+      tips: [
+        '0DTE = Zero Days to Expiration. Options that expire today.',
+        'They are cheap (low premium) but move fast — a 1% stock move can double or zero your option.',
+        'Only trade 0DTE if you can watch the screen. They are NOT set-and-forget.',
+        'Best 0DTE tickers: SPY, QQQ, SPX — highest liquidity, tightest spreads.',
+      ],
+      link: { label: '0DTE options explained', url: 'https://www.tastylive.com/learn/0dte-options', source: 'tastylive' },
+    },
+    {
+      heading: 'Grades (A / B / C)',
+      tips: [
+        'Grade A: 3+ confirming signals (gap + high volume + momentum). Highest probability.',
+        'Grade B: 2 confirming signals. Good setups but wait for confirmation.',
+        'Grade C: Weak signal. Avoid — risk/reward is not favorable.',
+        'As a beginner, trade Grade A only. Never force a Grade C trade.',
+      ],
+    },
+    {
+      heading: 'Signal Strength & Entry Type',
+      tips: [
+        'Gap & Go: Stock gaps up/down at open with above-average volume — momentum trade.',
+        'Volume Surge: Unusual volume without a gap — watch for direction confirmation.',
+        'Momentum: Strong pre-market move continuing into the open.',
+        'Always wait for the 10:00 AM candle to confirm direction before entering.',
+      ],
+      link: { label: 'Gap trading strategies', url: 'https://www.investopedia.com/articles/trading/05/playinggaps.asp', source: 'Investopedia' },
+    },
+    {
+      heading: 'Position Sizing for $200 Budget',
+      tips: [
+        'The scanner calculates how many contracts your budget buys at the estimated midpoint premium.',
+        'Never spend your entire $200 on one trade — keep 50% as a reserve.',
+        'Stop loss is pre-set at 50% of premium paid. Exit immediately if hit.',
+        'Target exit is when the premium doubles or reaches 80% of max profit.',
+      ],
+    },
+  ],
+}
 
 interface ZeroDteSetup {
   symbol: string
@@ -46,6 +91,9 @@ export default function ZeroDtePage() {
   const [filterGrade, setFilterGrade] = useState<'all' | 'A' | 'B'>('all')
   const [filterTrend, setFilterTrend] = useState<'all' | 'bullish' | 'bearish'>('all')
 
+  // Auto-scan on mount with default budget
+  useEffect(() => { scan() }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   const scan = useCallback(async () => {
     setLoading(true)
     setError(null)
@@ -75,6 +123,8 @@ export default function ZeroDtePage() {
           <p className="text-gray-400 mt-1 text-sm">Best same-day and weekly plays based on gap, volume, and momentum. Calibrated to your budget.</p>
         </div>
       </div>
+
+      <PageHelp {...HELP} />
 
       {/* Time of Day Banner */}
       {timeNote && (
