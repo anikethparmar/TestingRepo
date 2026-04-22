@@ -43,9 +43,17 @@ export interface ZeroDteSetup {
 
 function getMarketStatus(): { open: boolean; note: string; window: 'prime' | 'ok' | 'avoid' | 'closed' | 'premarket' } {
   const now = new Date()
-  // Approximate ET: UTC-5 (ignores DST — close enough for trading decisions)
-  const etMinutes = (now.getUTCHours() * 60 + now.getUTCMinutes()) - 5 * 60
-  const dow = now.getUTCDay() // 0=Sun, 6=Sat
+  // Use Intl to get proper ET (handles EST/EDT DST automatically)
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    hour: 'numeric', minute: 'numeric', weekday: 'short', hour12: false,
+  }).formatToParts(now)
+  const hour = parseInt(parts.find(p => p.type === 'hour')?.value ?? '0')
+  const minute = parseInt(parts.find(p => p.type === 'minute')?.value ?? '0')
+  const weekday = parts.find(p => p.type === 'weekday')?.value ?? 'Mon'
+  const etMinutes = hour * 60 + minute
+  const dowMap: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 }
+  const dow = dowMap[weekday] ?? 1
   const isWeekend = dow === 0 || dow === 6
 
   if (isWeekend) return { open: false, window: 'closed', note: 'Market closed (weekend). Use Tomorrow\'s Game Plan to prep for Monday.' }
