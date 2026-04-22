@@ -118,13 +118,14 @@ export async function GET(request: NextRequest) {
         ? ((closes[closes.length - 1] - closes[closes.length - 5]) / closes[closes.length - 5]) * 100
         : 0
 
-      // Signal detection
+      // Signal detection — thresholds tuned for typical market days
       const gapPct = changePct
-      const isGapUp = gapPct > 1.5
-      const isGapDown = gapPct < -1.5
-      const isHighVol = volRatio > 1.5
-      const isMomentumUp = momentum1h > 0.5
-      const isMomentumDown = momentum1h < -0.5
+      const isGapUp = gapPct > 0.8
+      const isGapDown = gapPct < -0.8
+      const isHighVol = volRatio > 1.2
+      const isMomentumUp = momentum1h > 0.3
+      const isMomentumDown = momentum1h < -0.3
+      const isAnyMove = Math.abs(gapPct) > 0.3
 
       let trend: 'bullish' | 'bearish' | 'neutral' = 'neutral'
       let signal = ''
@@ -144,12 +145,20 @@ export async function GET(request: NextRequest) {
         trend = 'bullish'; signal = 'Volume Surge + Upward Momentum'; signalStrength = 65; entryType = 'Momentum'; optionType = 'call'
       } else if (isHighVol && isMomentumDown) {
         trend = 'bearish'; signal = 'Volume Surge + Downward Momentum'; signalStrength = 65; entryType = 'Momentum'; optionType = 'put'
-      } else if (Math.abs(gapPct) > 0.5 && isHighVol) {
+      } else if (isGapUp && isMomentumUp) {
+        trend = 'bullish'; signal = 'Gap Up + Bullish Momentum'; signalStrength = 60; entryType = 'Trend'; optionType = 'call'
+      } else if (isGapDown && isMomentumDown) {
+        trend = 'bearish'; signal = 'Gap Down + Bearish Momentum'; signalStrength = 60; entryType = 'Trend'; optionType = 'put'
+      } else if (isAnyMove && isHighVol) {
         trend = gapPct > 0 ? 'bullish' : 'bearish'
-        signal = `${gapPct > 0 ? 'Bullish' : 'Bearish'} intraday move`
+        signal = `${gapPct > 0 ? 'Bullish' : 'Bearish'} move + volume`
         signalStrength = 55; entryType = 'Trend'; optionType = gapPct > 0 ? 'call' : 'put'
+      } else if (isGapUp || isGapDown) {
+        trend = gapPct > 0 ? 'bullish' : 'bearish'
+        signal = `${gapPct > 0 ? 'Gap Up' : 'Gap Down'} ${Math.abs(gapPct).toFixed(1)}%`
+        signalStrength = 50; entryType = 'Gap Watch'; optionType = gapPct > 0 ? 'call' : 'put'
       } else {
-        continue // Skip weak setups
+        continue // Skip flat, low-volume names
       }
 
       // Strike selection: 1-2 strikes OTM for directional play
