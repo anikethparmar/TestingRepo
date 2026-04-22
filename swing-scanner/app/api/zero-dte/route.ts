@@ -80,7 +80,6 @@ export async function GET(request: NextRequest) {
   const minVolRatio = Number(sp.get('minVolRatio') ?? 1.2)
   const minMomentum = Number(sp.get('minMomentum') ?? 0.3)
 
-  const setups: ZeroDteSetup[] = []
   const today = new Date().toISOString().split('T')[0]
   const marketStatus = getMarketStatus()
 
@@ -95,134 +94,132 @@ export async function GET(request: NextRequest) {
     })
   }
 
-  for (const symbol of ZERO_DTE_UNIVERSE) {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const [quote, bars] = await Promise.all([
-        yf.quote(symbol) as Promise<any>,
-        fetchOHLCV(symbol, 10),
-      ])
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async function scanSymbol(symbol: string): Promise<ZeroDteSetup | null> {
+    const [quote, bars] = await Promise.all([
+      yf.quote(symbol) as Promise<any>,
+      fetchOHLCV(symbol, 10),
+    ])
 
-      if (!quote || !quote.regularMarketPrice) continue
+    if (!quote || !quote.regularMarketPrice) return null
 
-      const spot = quote.regularMarketPrice
-      const prevClose = quote.regularMarketPreviousClose ?? spot
-      const changePct = ((spot - prevClose) / prevClose) * 100
-      const volume = quote.regularMarketVolume ?? 0
-      const avgVolume = quote.averageDailyVolume3Month ?? 1
-      const volRatio = volume / avgVolume
+    const spot = quote.regularMarketPrice
+    const prevClose = quote.regularMarketPreviousClose ?? spot
+    const changePct = ((spot - prevClose) / prevClose) * 100
+    const volume = quote.regularMarketVolume ?? 0
+    const avgVolume = quote.averageDailyVolume3Month ?? 1
+    const volRatio = volume / avgVolume
 
-      // Skip low-liquidity
-      if (volRatio < 0.3) continue
+    if (volRatio < 0.3) return null
 
-      // Momentum from recent bars
-      const closes = bars.map(b => b.close)
-      const momentum1h = closes.length >= 5
-        ? ((closes[closes.length - 1] - closes[closes.length - 5]) / closes[closes.length - 5]) * 100
-        : 0
+    const closes = bars.map((b: { close: number }) => b.close)
+    const momentum1h = closes.length >= 5
+      ? ((closes[closes.length - 1] - closes[closes.length - 5]) / closes[closes.length - 5]) * 100
+      : 0
 
-      // Signal detection — thresholds driven by UI sensitivity preset
-      const gapPct = changePct
-      const isGapUp = gapPct > minGap
-      const isGapDown = gapPct < -minGap
-      const isHighVol = volRatio > minVolRatio
-      const isMomentumUp = momentum1h > minMomentum
-      const isMomentumDown = momentum1h < -minMomentum
-      const isAnyMove = Math.abs(gapPct) > minGap * 0.4
+    const gapPct = changePct
+    const isGapUp = gapPct > minGap
+    const isGapDown = gapPct < -minGap
+    const isHighVol = volRatio > minVolRatio
+    const isMomentumUp = momentum1h > minMomentum
+    const isMomentumDown = momentum1h < -minMomentum
+    const isAnyMove = Math.abs(gapPct) > minGap * 0.4
 
-      let trend: 'bullish' | 'bearish' | 'neutral' = 'neutral'
-      let signal = ''
-      let signalStrength = 0
-      let entryType = ''
-      let optionType: 'call' | 'put' = 'call'
+    let trend: 'bullish' | 'bearish' | 'neutral' = 'neutral'
+    let signal = ''
+    let signalStrength = 0
+    let entryType = ''
+    let optionType: 'call' | 'put' = 'call'
 
-      if (isGapUp && isHighVol && isMomentumUp) {
-        trend = 'bullish'; signal = 'Gap Up + Volume Surge + Momentum'; signalStrength = 90; entryType = 'Gap & Go'; optionType = 'call'
-      } else if (isGapDown && isHighVol && isMomentumDown) {
-        trend = 'bearish'; signal = 'Gap Down + Volume Surge + Momentum'; signalStrength = 90; entryType = 'Gap & Go'; optionType = 'put'
-      } else if (isGapUp && isHighVol) {
-        trend = 'bullish'; signal = 'Gap Up + High Volume'; signalStrength = 75; entryType = 'Gap & Go'; optionType = 'call'
-      } else if (isGapDown && isHighVol) {
-        trend = 'bearish'; signal = 'Gap Down + High Volume'; signalStrength = 75; entryType = 'Gap & Go'; optionType = 'put'
-      } else if (isHighVol && isMomentumUp) {
-        trend = 'bullish'; signal = 'Volume Surge + Upward Momentum'; signalStrength = 65; entryType = 'Momentum'; optionType = 'call'
-      } else if (isHighVol && isMomentumDown) {
-        trend = 'bearish'; signal = 'Volume Surge + Downward Momentum'; signalStrength = 65; entryType = 'Momentum'; optionType = 'put'
-      } else if (isGapUp && isMomentumUp) {
-        trend = 'bullish'; signal = 'Gap Up + Bullish Momentum'; signalStrength = 60; entryType = 'Trend'; optionType = 'call'
-      } else if (isGapDown && isMomentumDown) {
-        trend = 'bearish'; signal = 'Gap Down + Bearish Momentum'; signalStrength = 60; entryType = 'Trend'; optionType = 'put'
-      } else if (isAnyMove && isHighVol) {
-        trend = gapPct > 0 ? 'bullish' : 'bearish'
-        signal = `${gapPct > 0 ? 'Bullish' : 'Bearish'} move + volume`
-        signalStrength = 55; entryType = 'Trend'; optionType = gapPct > 0 ? 'call' : 'put'
-      } else if (isGapUp || isGapDown) {
-        trend = gapPct > 0 ? 'bullish' : 'bearish'
-        signal = `${gapPct > 0 ? 'Gap Up' : 'Gap Down'} ${Math.abs(gapPct).toFixed(1)}%`
-        signalStrength = 50; entryType = 'Gap Watch'; optionType = gapPct > 0 ? 'call' : 'put'
-      } else {
-        continue // Skip flat, low-volume names
-      }
+    if (isGapUp && isHighVol && isMomentumUp) {
+      trend = 'bullish'; signal = 'Gap Up + Volume Surge + Momentum'; signalStrength = 90; entryType = 'Gap & Go'; optionType = 'call'
+    } else if (isGapDown && isHighVol && isMomentumDown) {
+      trend = 'bearish'; signal = 'Gap Down + Volume Surge + Momentum'; signalStrength = 90; entryType = 'Gap & Go'; optionType = 'put'
+    } else if (isGapUp && isHighVol) {
+      trend = 'bullish'; signal = 'Gap Up + High Volume'; signalStrength = 75; entryType = 'Gap & Go'; optionType = 'call'
+    } else if (isGapDown && isHighVol) {
+      trend = 'bearish'; signal = 'Gap Down + High Volume'; signalStrength = 75; entryType = 'Gap & Go'; optionType = 'put'
+    } else if (isHighVol && isMomentumUp) {
+      trend = 'bullish'; signal = 'Volume Surge + Upward Momentum'; signalStrength = 65; entryType = 'Momentum'; optionType = 'call'
+    } else if (isHighVol && isMomentumDown) {
+      trend = 'bearish'; signal = 'Volume Surge + Downward Momentum'; signalStrength = 65; entryType = 'Momentum'; optionType = 'put'
+    } else if (isGapUp && isMomentumUp) {
+      trend = 'bullish'; signal = 'Gap Up + Bullish Momentum'; signalStrength = 60; entryType = 'Trend'; optionType = 'call'
+    } else if (isGapDown && isMomentumDown) {
+      trend = 'bearish'; signal = 'Gap Down + Bearish Momentum'; signalStrength = 60; entryType = 'Trend'; optionType = 'put'
+    } else if (isAnyMove && isHighVol) {
+      trend = gapPct > 0 ? 'bullish' : 'bearish'
+      signal = `${gapPct > 0 ? 'Bullish' : 'Bearish'} move + volume`
+      signalStrength = 55; entryType = 'Trend'; optionType = gapPct > 0 ? 'call' : 'put'
+    } else if (isGapUp || isGapDown) {
+      trend = gapPct > 0 ? 'bullish' : 'bearish'
+      signal = `${gapPct > 0 ? 'Gap Up' : 'Gap Down'} ${Math.abs(gapPct).toFixed(1)}%`
+      signalStrength = 50; entryType = 'Gap Watch'; optionType = gapPct > 0 ? 'call' : 'put'
+    } else {
+      return null
+    }
 
-      // Strike selection: 1-2 strikes OTM for directional play
-      const otmOffset = spot * 0.005 // 0.5% OTM
-      const suggestedStrike = optionType === 'call'
-        ? Math.ceil((spot + otmOffset) / (spot > 100 ? 1 : 0.5)) * (spot > 100 ? 1 : 0.5)
-        : Math.floor((spot - otmOffset) / (spot > 100 ? 1 : 0.5)) * (spot > 100 ? 1 : 0.5)
+    const otmOffset = spot * 0.005
+    const suggestedStrike = optionType === 'call'
+      ? Math.ceil((spot + otmOffset) / (spot > 100 ? 1 : 0.5)) * (spot > 100 ? 1 : 0.5)
+      : Math.floor((spot - otmOffset) / (spot > 100 ? 1 : 0.5)) * (spot > 100 ? 1 : 0.5)
 
-      // Premium estimate (rough approximation based on IV and time)
-      const ivEst = 0.25 // 25% IV assumption for liquid names
-      const premiumEst = spot * ivEst * Math.sqrt(0.5 / 365) // ~half day to expiry
-      const estimatedPremium = Math.max(0.05, parseFloat((premiumEst * (optionType === 'call' ? 1 : 0.9)).toFixed(2)))
+    const ivEst = 0.25
+    const premiumEst = spot * ivEst * Math.sqrt(0.5 / 365)
+    const estimatedPremium = Math.max(0.05, parseFloat((premiumEst * (optionType === 'call' ? 1 : 0.9)).toFixed(2)))
 
-      const contractsFor200 = Math.floor(budget / (estimatedPremium * 100))
-      const maxLoss = contractsFor200 * estimatedPremium * 100
-      const targetPremium = parseFloat((estimatedPremium * (1 + targetProfit / maxLoss)).toFixed(2))
-      const stopPremium = parseFloat((estimatedPremium * 0.5).toFixed(2)) // 50% stop
-      const maxProfit = contractsFor200 * (targetPremium - estimatedPremium) * 100
-      const riskReward = maxProfit / maxLoss
+    const contractsFor200 = Math.floor(budget / (estimatedPremium * 100))
+    const maxLoss = contractsFor200 * estimatedPremium * 100
+    const targetPremium = parseFloat((estimatedPremium * (1 + targetProfit / maxLoss)).toFixed(2))
+    const stopPremium = parseFloat((estimatedPremium * 0.5).toFixed(2))
+    const maxProfit = contractsFor200 * (targetPremium - estimatedPremium) * 100
+    const riskReward = maxProfit / maxLoss
 
-      const catalysts: string[] = []
-      if (isGapUp || isGapDown) catalysts.push(`Gap ${gapPct > 0 ? 'up' : 'down'} ${Math.abs(gapPct).toFixed(1)}%`)
-      if (isHighVol) catalysts.push(`${volRatio.toFixed(1)}x average volume`)
-      if (quote.earningsTimestamp) {
-        const daysToEarnings = Math.ceil((new Date(quote.earningsTimestamp * 1000).getTime() - Date.now()) / 86400000)
-        if (daysToEarnings >= 0 && daysToEarnings <= 5) catalysts.push(`Earnings in ${daysToEarnings} days`)
-      }
+    const catalysts: string[] = []
+    if (isGapUp || isGapDown) catalysts.push(`Gap ${gapPct > 0 ? 'up' : 'down'} ${Math.abs(gapPct).toFixed(1)}%`)
+    if (isHighVol) catalysts.push(`${volRatio.toFixed(1)}x average volume`)
+    if (quote.earningsTimestamp) {
+      const daysToEarnings = Math.ceil((new Date(quote.earningsTimestamp * 1000).getTime() - Date.now()) / 86400000)
+      if (daysToEarnings >= 0 && daysToEarnings <= 5) catalysts.push(`Earnings in ${daysToEarnings} days`)
+    }
 
-      const grade: 'A' | 'B' | 'C' = signalStrength >= 80 ? 'A' : signalStrength >= 65 ? 'B' : 'C'
+    const grade: 'A' | 'B' | 'C' = signalStrength >= 80 ? 'A' : signalStrength >= 65 ? 'B' : 'C'
 
-      setups.push({
-        symbol,
-        name: quote.longName ?? quote.shortName ?? symbol,
-        spotPrice: parseFloat(spot.toFixed(2)),
-        changePct: parseFloat(changePct.toFixed(2)),
-        volume,
-        avgVolume,
-        volRatio: parseFloat(volRatio.toFixed(1)),
-        trend,
-        signal,
-        signalStrength,
-        entryType,
-        suggestedStrike,
-        suggestedExpiry: today,
-        optionType,
-        estimatedPremium,
-        targetPremium,
-        stopPremium,
-        contractsFor200,
-        maxProfit: parseFloat(maxProfit.toFixed(0)),
-        maxLoss: parseFloat(maxLoss.toFixed(0)),
-        riskReward: parseFloat(riskReward.toFixed(2)),
-        gapPct: parseFloat(gapPct.toFixed(2)),
-        relativeVolume: parseFloat(volRatio.toFixed(1)),
-        momentum1h: parseFloat(momentum1h.toFixed(2)),
-        catalysts,
-        timeOfDayNote: marketStatus.note,
-        grade,
-      })
-    } catch { /* skip */ }
+    return {
+      symbol,
+      name: quote.longName ?? quote.shortName ?? symbol,
+      spotPrice: parseFloat(spot.toFixed(2)),
+      changePct: parseFloat(changePct.toFixed(2)),
+      volume,
+      avgVolume,
+      volRatio: parseFloat(volRatio.toFixed(1)),
+      trend,
+      signal,
+      signalStrength,
+      entryType,
+      suggestedStrike,
+      suggestedExpiry: today,
+      optionType,
+      estimatedPremium,
+      targetPremium,
+      stopPremium,
+      contractsFor200,
+      maxProfit: parseFloat(maxProfit.toFixed(0)),
+      maxLoss: parseFloat(maxLoss.toFixed(0)),
+      riskReward: parseFloat(riskReward.toFixed(2)),
+      gapPct: parseFloat(gapPct.toFixed(2)),
+      relativeVolume: parseFloat(volRatio.toFixed(1)),
+      momentum1h: parseFloat(momentum1h.toFixed(2)),
+      catalysts,
+      timeOfDayNote: marketStatus.note,
+      grade,
+    }
   }
+
+  const results = await Promise.allSettled(ZERO_DTE_UNIVERSE.map(scanSymbol))
+  const setups = results
+    .filter((r): r is PromiseFulfilledResult<ZeroDteSetup> => r.status === 'fulfilled' && r.value !== null)
+    .map(r => r.value)
 
   setups.sort((a, b) => b.signalStrength - a.signalStrength)
   return Response.json({
