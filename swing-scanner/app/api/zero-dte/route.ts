@@ -169,6 +169,9 @@ export async function GET(request: NextRequest) {
     const estimatedPremium = Math.max(0.05, parseFloat((premiumEst * (optionType === 'call' ? 1 : 0.9)).toFixed(2)))
 
     const contractsFor200 = Math.floor(budget / (estimatedPremium * 100))
+    // Skip symbols where the budget can't cover even one contract — avoids div/0 below
+    if (contractsFor200 === 0) return null
+
     const maxLoss = contractsFor200 * estimatedPremium * 100
     const targetPremium = parseFloat((estimatedPremium * (1 + targetProfit / maxLoss)).toFixed(2))
     const stopPremium = parseFloat((estimatedPremium * 0.5).toFixed(2))
