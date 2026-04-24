@@ -15,8 +15,11 @@ const nav = [
     { href: '/dashboard/trade-planner', label: 'Trade Planner', icon: '🎯' },
     { href: '/dashboard/journal', label: 'Trade Journal', icon: '📓' },
   ]},
+  { group: 'Long-Term Investing', items: [
+    { href: '/dashboard/longterm', label: 'LT Growth Scanner', icon: '🌱', badge: 'NEW' },
+  ]},
   { group: 'Learn & Practice', items: [
-    { href: '/dashboard/learn', label: 'Options Academy', icon: '🎓', badge: 'NEW' },
+    { href: '/dashboard/learn', label: 'Options Academy', icon: '🎓' },
   ]},
   { group: 'Settings', items: [
     { href: '/dashboard/config', label: 'Config', icon: '⚙️' },
